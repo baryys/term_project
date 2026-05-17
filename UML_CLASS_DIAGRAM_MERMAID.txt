@@ -1,0 +1,346 @@
+```mermaid
+classDiagram
+
+    %% ==========================================================================
+    %% MODEL
+    %% ==========================================================================
+
+    class WeatherState {
+        <<enumeration>>
+        SUNNY
+        CLOUDY
+        RAINY
+        SNOWY
+    }
+
+    class City {
+        -name : String
+        -population : int
+        -area : double
+        -currentTemperature : double
+        -currentWeatherState : WeatherState
+        +City(String, int, double, double, WeatherState)
+        +getName() String
+        +getPopulation() int
+        +getArea() double
+        +getCurrentTemperature() double
+        +getCurrentWeatherState() WeatherState
+        +setCurrentTemperature(double) void
+        +setCurrentWeatherState(WeatherState) void
+        +toString() String
+    }
+
+    City --> WeatherState : uses
+
+    %% ==========================================================================
+    %% UTILITY
+    %% ==========================================================================
+
+    class SimpleCityJsonParser {
+        <<utility>>
+        +parse(String) List~City~
+        -readContent(String) String
+        -extractObjectBlocks(String) List~String~
+        -parseCity(String) City
+        -readStringField(String, String) String
+        -readValueField(String, String) String
+    }
+
+    %% ==========================================================================
+    %% REPOSITORY — Singleton Pattern
+    %% ==========================================================================
+
+    class CityRepository {
+        <<singleton>>
+        -instance : CityRepository
+        -cities : List~City~
+        -CityRepository()
+        +getInstance() CityRepository
+        +getCities() List~City~
+    }
+
+    CityRepository ..> SimpleCityJsonParser : uses
+    CityRepository --> City : holds
+
+    %% ==========================================================================
+    %% STRATEGY Pattern — City Sorting
+    %% ==========================================================================
+
+    class CitySortStrategy {
+        <<interface>>
+        +sort(List~City~) List~City~
+    }
+
+    class NameSortStrategy {
+        +sort(List~City~) List~City~
+        +toString() String
+    }
+
+    class PopulationSortStrategy {
+        +sort(List~City~) List~City~
+        +toString() String
+    }
+
+    class AreaSortStrategy {
+        +sort(List~City~) List~City~
+        +toString() String
+    }
+
+    class CitySorter {
+        -strategy : CitySortStrategy
+        +CitySorter(CitySortStrategy)
+        +setStrategy(CitySortStrategy) void
+        +getStrategy() CitySortStrategy
+        +sort(List~City~) List~City~
+    }
+
+    NameSortStrategy ..|> CitySortStrategy : implements
+    PopulationSortStrategy ..|> CitySortStrategy : implements
+    AreaSortStrategy ..|> CitySortStrategy : implements
+    CitySorter o-- CitySortStrategy : aggregates
+
+    %% ==========================================================================
+    %% ITERATOR Pattern — Weather Filtering
+    %% ==========================================================================
+
+    class WeatherCityIterator {
+        <<interface>>
+        +hasNext() boolean
+        +next() City
+    }
+
+    class AbstractWeatherCityIterator {
+        <<abstract>>
+        -cities : List~City~
+        -cursor : int
+        #AbstractWeatherCityIterator(List~City~)
+        #getWeatherState() WeatherState
+        +hasNext() boolean
+        +next() City
+        -advance() void
+    }
+
+    class SunnyCityIterator {
+        +SunnyCityIterator(List~City~)
+        #getWeatherState() WeatherState
+    }
+
+    class CloudyCityIterator {
+        +CloudyCityIterator(List~City~)
+        #getWeatherState() WeatherState
+    }
+
+    class RainyCityIterator {
+        +RainyCityIterator(List~City~)
+        #getWeatherState() WeatherState
+    }
+
+    class SnowyCityIterator {
+        +SnowyCityIterator(List~City~)
+        #getWeatherState() WeatherState
+    }
+
+    AbstractWeatherCityIterator ..|> WeatherCityIterator : implements
+    SunnyCityIterator --|> AbstractWeatherCityIterator : extends
+    CloudyCityIterator --|> AbstractWeatherCityIterator : extends
+    RainyCityIterator --|> AbstractWeatherCityIterator : extends
+    SnowyCityIterator --|> AbstractWeatherCityIterator : extends
+
+    %% ==========================================================================
+    %% OBSERVER Pattern — Live Weather Updates
+    %% ==========================================================================
+
+    class WeatherSubject {
+        <<interface>>
+        +addObserver(WeatherObserver) void
+        +removeObserver(WeatherObserver) void
+        +notifyObservers() void
+    }
+
+    class WeatherObserver {
+        <<interface>>
+        +onWeatherUpdated(List~City~) void
+    }
+
+    class WeatherReportProvider {
+        -observers : List~WeatherObserver~
+        -cities : List~City~
+        -random : Random
+        -running : boolean
+        -workerThread : Thread
+        +WeatherReportProvider(List~City~)
+        +addObserver(WeatherObserver) void
+        +removeObserver(WeatherObserver) void
+        +notifyObservers() void
+        +start() void
+        +stop() void
+        +getCities() List~City~
+        -updateLoop() void
+        -updateCities() void
+    }
+
+    WeatherReportProvider ..|> WeatherSubject : implements
+    WeatherReportProvider --> WeatherObserver : notifies
+
+    %% ==========================================================================
+    %% DECORATOR Pattern — City Activity Planning
+    %% ==========================================================================
+
+    class CityActivity {
+        <<interface>>
+        +getCity() City
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class BaseCityActivity {
+        -city : City
+        +BaseCityActivity(City)
+        +getCity() City
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class CityActivityDecorator {
+        <<abstract>>
+        #wrapped : CityActivity
+        #CityActivityDecorator(CityActivity)
+        +getCity() City
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class MuseumVisit {
+        +MuseumVisit(CityActivity)
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class ShoppingMallVisit {
+        +ShoppingMallVisit(CityActivity)
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class ParkVisit {
+        +ParkVisit(CityActivity)
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    class CityCenterVisit {
+        +CityCenterVisit(CityActivity)
+        +getDescription() String
+        +getCost() double
+        +getRequiredHours() double
+    }
+
+    BaseCityActivity ..|> CityActivity : implements
+    CityActivityDecorator ..|> CityActivity : implements
+    CityActivityDecorator o-- CityActivity : wraps
+    MuseumVisit --|> CityActivityDecorator : extends
+    ShoppingMallVisit --|> CityActivityDecorator : extends
+    ParkVisit --|> CityActivityDecorator : extends
+    CityCenterVisit --|> CityActivityDecorator : extends
+
+    %% ==========================================================================
+    %% UI LAYER
+    %% ==========================================================================
+
+    class MainFrame {
+        <<JFrame>>
+        -provider : WeatherReportProvider
+        -sorter : CitySorter
+        -currentFilter : WeatherState
+        -latestCities : List~City~
+        -controlPanel : ControlPanel
+        -allCitiesPanel : AllCitiesPanel
+        -weatherFilterPanel : WeatherFilterPanel
+        -plannerPanel : PlannerPanel
+        -barChartPanel : TemperatureBarChartPanel
+        -pieChartPanel : WeatherPieChartPanel
+        +MainFrame()
+        +onWeatherUpdated(List~City~) void
+        -buildLayout() void
+        -wireEvents() void
+        -refreshAll(List~City~) void
+    }
+
+    class ControlPanel {
+        <<JPanel>>
+        -sortCombo : JComboBox
+        -weatherCombo : JComboBox
+        +getSortCombo() JComboBox
+        +getWeatherCombo() JComboBox
+    }
+
+    class AllCitiesPanel {
+        <<JPanel>>
+        -listModel : DefaultListModel
+        -cityList : JList
+        +setCities(List~City~) void
+        +getSelectedCity() City
+        +getList() JList
+    }
+
+    class WeatherFilterPanel {
+        <<JPanel>>
+        -listModel : DefaultListModel
+        -cityList : JList
+        +setCitiesWithFilter(List~City~, WeatherState) void
+    }
+
+    class PlannerPanel {
+        <<JPanel>>
+        -currentCity : City
+        -museumCb : JCheckBox
+        -shoppingCb : JCheckBox
+        -parkCb : JCheckBox
+        -cityCenterCb : JCheckBox
+        -costLabel : JLabel
+        -hoursLabel : JLabel
+        -descArea : JTextArea
+        +setCity(City) void
+        -recalculate() void
+    }
+
+    class TemperatureBarChartPanel {
+        <<JPanel>>
+        -cities : List~City~
+        +setCities(List~City~) void
+        +paintComponent(Graphics) void
+    }
+
+    class WeatherPieChartPanel {
+        <<JPanel>>
+        -cities : List~City~
+        +setCities(List~City~) void
+        +paintComponent(Graphics) void
+    }
+
+    class CityListCellRenderer {
+        <<DefaultListCellRenderer>>
+        +getListCellRendererComponent(JList, Object, int, boolean, boolean) Component
+    }
+
+    MainFrame ..|> WeatherObserver : implements
+    MainFrame *-- ControlPanel : contains
+    MainFrame *-- AllCitiesPanel : contains
+    MainFrame *-- WeatherFilterPanel : contains
+    MainFrame *-- PlannerPanel : contains
+    MainFrame *-- TemperatureBarChartPanel : contains
+    MainFrame *-- WeatherPieChartPanel : contains
+    MainFrame *-- WeatherReportProvider : owns
+    MainFrame *-- CitySorter : owns
+
+    WeatherFilterPanel ..> WeatherCityIterator : uses
+    PlannerPanel ..> CityActivity : uses
+    AllCitiesPanel ..> CityListCellRenderer : uses
+    WeatherFilterPanel ..> CityListCellRenderer : uses
+```

@@ -1,0 +1,410 @@
+================================================================================
+  TRAVEL PLANNER SYSTEM — UML CLASS DIAGRAM
+================================================================================
+
+LEGEND
+  ───────────────▷   extends  (inheritance)
+  ─ ─ ─ ─ ─ ─ ─ ▷   implements  (interface realisation)
+  ───────────────>   uses / depends on
+  ◆──────────────    composition  (owner holds lifecycle)
+  ◇──────────────    aggregation  (owner references, does not own)
+
+================================================================================
+  1. MODEL
+================================================================================
+
+ ┌───────────────────────────────────┐          ┌─────────────────────┐
+ │               City               │          │   <<enumeration>>   │
+ ├───────────────────────────────────┤          │     WeatherState    │
+ │ - name               : String    │          ├─────────────────────┤
+ │ - population         : int       │  uses    │  SUNNY              │
+ │ - area               : double    │─────────>│  CLOUDY             │
+ │ - currentTemperature : double    │          │  RAINY              │
+ │ - currentWeatherState: WeatherState         │  SNOWY              │
+ ├───────────────────────────────────┤          └─────────────────────┘
+ │ + City(String,int,double,        │
+ │        double,WeatherState)      │
+ │ + getName()               : String
+ │ + getPopulation()         : int  │
+ │ + getArea()               : double
+ │ + getCurrentTemperature() : double
+ │ + getCurrentWeatherState(): WeatherState
+ │ + set*(...)               : void │
+ │ + toString()              : String
+ └───────────────────────────────────┘
+
+
+================================================================================
+  2. UTILITY
+================================================================================
+
+ ┌──────────────────────────────────────┐
+ │         SimpleCityJsonParser         │
+ │           <<utility>>                │
+ ├──────────────────────────────────────┤
+ │  (no instance state — all static)   │
+ ├──────────────────────────────────────┤
+ │ + parse(path:String) : List<City>   │  {static}
+ │ - readContent(path)  : String       │  {static}
+ │ - extractObjectBlocks(json): List   │  {static}
+ │ - parseCity(block:String) : City    │  {static}
+ │ - readStringField(...): String      │  {static}
+ │ - readValueField(...) : String      │  {static}
+ └──────────────────────────────────────┘
+
+
+================================================================================
+  3. REPOSITORY — Singleton Pattern
+================================================================================
+
+ ┌──────────────────────────────────────────┐
+ │            CityRepository                │
+ ├──────────────────────────────────────────┤
+ │ - instance : CityRepository  {static}   │
+ │ - cities   : List<City>                 │
+ ├──────────────────────────────────────────┤
+ │ - CityRepository()                      │   ← private constructor
+ │ + getInstance() : CityRepository{static}│   ← global access point
+ │ + getCities()   : List<City>            │
+ └──────────────────────────────────────────┘
+              │
+              │ uses (on first construction)
+              ▼
+ SimpleCityJsonParser.parse("cities.json")
+              │
+              │ returns
+              ▼
+         List<City>  (unmodifiable, cached for lifetime of app)
+
+
+================================================================================
+  4. STRATEGY Pattern — City Sorting
+================================================================================
+
+                  ┌─────────────────────────┐
+                  │      <<interface>>       │
+                  │     CitySortStrategy     │
+                  ├─────────────────────────┤
+                  │ + sort(List<City>)       │
+                  │       : List<City>       │
+                  └─────────────────────────┘
+                       △       △       △
+                       │       │       │    (implements)
+            ┌──────────┘  ┌────┘  └────┐
+            │             │            │
+ ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+ │  NameSort-   │  │ Population-  │  │  AreaSort-   │
+ │  Strategy    │  │ SortStrategy │  │  Strategy    │
+ ├──────────────┤  ├──────────────┤  ├──────────────┤
+ │+sort(List)   │  │+sort(List)   │  │+sort(List)   │
+ │  A→Z by name │  │  high→low    │  │  large→small │
+ └──────────────┘  └──────────────┘  └──────────────┘
+
+ ┌─────────────────────────────────┐
+ │           CitySorter            │   ← Context
+ ├─────────────────────────────────┤
+ │ - strategy : CitySortStrategy  │
+ ├─────────────────────────────────┤
+ │ + CitySorter(CitySortStrategy) │
+ │ + setStrategy(CitySortStrategy)│   ← swap strategy at runtime
+ │ + getStrategy(): CitySortStrategy
+ │ + sort(List<City>) : List<City>│   ← delegates to strategy
+ └─────────────────────────────────┘
+              ◇
+              └──────── CitySortStrategy  (aggregation)
+
+
+================================================================================
+  5. ITERATOR Pattern — Weather Filtering
+================================================================================
+
+                  ┌─────────────────────────┐
+                  │      <<interface>>       │
+                  │   WeatherCityIterator    │
+                  ├─────────────────────────┤
+                  │ + hasNext() : boolean   │
+                  │ + next()    : City      │
+                  └─────────────────────────┘
+                               △
+                               │  implements
+                  ┌────────────┴────────────┐
+                  │ AbstractWeatherCity-     │
+                  │ Iterator  <<abstract>>   │
+                  ├──────────────────────────┤
+                  │ - cities : List<City>   │
+                  │ - cursor : int          │
+                  ├──────────────────────────┤
+                  │ # AbstractWeatherCity-  │
+                  │     Iterator(List<City>)│
+                  │ # getWeatherState()     │
+                  │     : WeatherState{abst}│
+                  │ + hasNext() : boolean   │
+                  │ + next()    : City      │
+                  │ - advance() : void      │
+                  └──────────────────────────┘
+                       △    △    △    △
+                       │    │    │    │   (extends)
+            ┌──────────┘  ┌─┘  └─┐  └──────────┐
+            │             │      │             │
+ ┌────────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+ │  SunnyCity │  │CloudyCity│  │RainyCity │  │SnowyCity │
+ │  Iterator  │  │Iterator  │  │Iterator  │  │Iterator  │
+ ├────────────┤  ├──────────┤  ├──────────┤  ├──────────┤
+ │+getWeather-│  │+getWeath-│  │+getWeath-│  │+getWeath-│
+ │ State()    │  │ erState()│  │ erState()│  │ erState()│
+ │  →SUNNY    │  │  →CLOUDY │  │  →RAINY  │  │  →SNOWY  │
+ └────────────┘  └──────────┘  └──────────┘  └──────────┘
+
+
+================================================================================
+  6. OBSERVER Pattern — Live Weather Updates
+================================================================================
+
+ ┌──────────────────────────────┐
+ │        <<interface>>         │
+ │        WeatherSubject        │
+ ├──────────────────────────────┤
+ │ + addObserver(WeatherObs.) │
+ │ + removeObserver(...)       │
+ │ + notifyObservers()         │
+ └──────────────────────────────┘
+                △
+                │  implements
+ ┌──────────────┴───────────────────────────┐
+ │          WeatherReportProvider           │   ← Subject (runs background thread)
+ ├──────────────────────────────────────────┤
+ │ - observers    : List<WeatherObserver>  │
+ │ - cities       : List<City>            │
+ │ - random       : Random                │
+ │ - running      : boolean               │
+ │ - workerThread : Thread                │
+ ├──────────────────────────────────────────┤
+ │ + WeatherReportProvider(List<City>)    │
+ │ + addObserver(WeatherObserver)         │
+ │ + removeObserver(WeatherObserver)      │
+ │ + notifyObservers()                    │
+ │ + start() : void                       │
+ │ + stop()  : void                       │
+ │ + getCities() : List<City>             │
+ │ - updateLoop() : void   {background}  │
+ │ - updateCities() : void               │
+ └──────────────────────────────────────────┘
+                │
+                │  notifies (every 3 s, from background thread)
+                ▼
+ ┌──────────────────────────────┐
+ │        <<interface>>         │
+ │        WeatherObserver       │
+ ├──────────────────────────────┤
+ │ + onWeatherUpdated(          │
+ │     List<City>) : void      │
+ └──────────────────────────────┘
+                △
+                │  implements
+          ┌─────┴──────┐
+          │  MainFrame │   uses SwingUtilities.invokeLater()
+          └────────────┘   to forward updates to all UI panels
+
+
+================================================================================
+  7. DECORATOR Pattern — City Activity Planning
+================================================================================
+
+                  ┌─────────────────────────┐
+                  │      <<interface>>       │
+                  │       CityActivity       │
+                  ├─────────────────────────┤
+                  │ + getCity()      : City │
+                  │ + getDescription(): String
+                  │ + getCost()      : double
+                  │ + getRequiredHours():double
+                  └─────────────────────────┘
+                       △               △
+                       │               │   (implements)
+              (implements)             │
+                       │     ┌─────────┴──────────────────┐
+ ┌─────────────────────┐│    │   CityActivityDecorator    │  ← Abstract Decorator
+ │  BaseCityActivity   ││    │       <<abstract>>          │
+ │  (Concrete Component││    ├────────────────────────────┤
+ ├─────────────────────┤│    │ # wrapped : CityActivity   │◇──────> CityActivity
+ │ - city : City       ││    ├────────────────────────────┤
+ ├─────────────────────┤│    │ # CityActivityDecorator(  │
+ │ + getCity()         ││    │     CityActivity)           │
+ │ + getDescription()  ││    │ + getCity()                │
+ │   "Trip to {name}"  ││    │ + getDescription()         │
+ │ + getCost()  → 0.0  ││    │ + getCost()                │
+ │ + getRequiredHours()││    │ + getRequiredHours()       │
+ │              → 0.0  ││    └────────────────────────────┘
+ └─────────────────────┘│                 △
+                        │                 │  extends
+                        │    ┌────────────┼─────────────┬────────────────┐
+                        │    │            │             │                │
+                        │ ┌────────┐ ┌────────┐ ┌──────────────┐ ┌──────────────┐
+                        │ │Museum  │ │  Park  │ │  Shopping-   │ │  CityCenter  │
+                        │ │Visit   │ │ Visit  │ │  MallVisit   │ │   Visit      │
+                        │ ├────────┤ ├────────┤ ├──────────────┤ ├──────────────┤
+                        │ │+getDes.│ │+getDes.│ │ +getDescr.() │ │ +getDescr.() │
+                        │ │+getCost│ │+getCost│ │ +getCost()   │ │ +getCost()   │
+                        │ │+getHrs.│ │+getHrs.│ │ +getHours()  │ │ +getHours()  │
+                        │ │+$15/3h │ │+$5 /2h │ │  +$100 / 4h  │ │  +$10 / 2.5h │
+                        │ └────────┘ └────────┘ └──────────────┘ └──────────────┘
+                        │
+                  Example decorator chain:
+                  new CityCenterVisit(
+                    new ParkVisit(
+                      new MuseumVisit(
+                        new BaseCityActivity(city))))
+                  → totalCost = $30, totalHours = 7.5h
+
+
+================================================================================
+  8. UI LAYER
+================================================================================
+
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                            MainFrame                                    │
+ │                   extends JFrame, implements WeatherObserver            │
+ ├─────────────────────────────────────────────────────────────────────────┤
+ │ - provider           : WeatherReportProvider                           │
+ │ - sorter             : CitySorter                                      │
+ │ - currentFilter      : WeatherState                                    │
+ │ - latestCities       : List<City>                                      │
+ │ - controlPanel       : ControlPanel                                    │
+ │ - allCitiesPanel     : AllCitiesPanel                                  │
+ │ - weatherFilterPanel : WeatherFilterPanel                              │
+ │ - plannerPanel       : PlannerPanel                                    │
+ │ - barChartPanel      : TemperatureBarChartPanel                        │
+ │ - pieChartPanel      : WeatherPieChartPanel                            │
+ ├─────────────────────────────────────────────────────────────────────────┤
+ │ + MainFrame()                                                          │
+ │ + onWeatherUpdated(List<City>) : void   {WeatherObserver}             │
+ │ - buildLayout()  : void                                               │
+ │ - wireEvents()   : void                                               │
+ │ - refreshAll(List<City>) : void                                       │
+ └─────────────────────────────────────────────────────────────────────────┘
+    ◆        ◆         ◆            ◆              ◆              ◆
+    │        │         │            │              │              │
+    ▼        ▼         ▼            ▼              ▼              ▼
+┌────────┐ ┌────────┐ ┌──────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐
+│Control │ │AllCit- │ │Weather-  │ │  Planner  │ │Temperatur.│ │ Weather  │
+│ Panel  │ │iesPanel│ │FilterPnl │ │   Panel   │ │BarChart-  │ │PieChart- │
+│extends │ │extends │ │ extends  │ │  extends  │ │  Panel    │ │  Panel   │
+│JPanel  │ │JPanel  │ │  JPanel  │ │  JPanel   │ │extendsJPnl│ │extendsJPnl
+├────────┤ ├────────┤ ├──────────┤ ├───────────┤ ├───────────┤ ├──────────┤
+│-sort   │ │-list-  │ │-listModel│ │-currentCi-│ │-cities:   │ │-cities:  │
+│ Combo  │ │ Model  │ │:Default- │ │  ty:City  │ │ List<City>│ │List<City>│
+│-weather│ │-city   │ │ ListModel│ │-museumCb  │ ├───────────┤ ├──────────┤
+│ Combo  │ │ List:  │ ├──────────┤ │-shoppingCb│ │+setCities │ │+setCities│
+│        │ │JList   │ │+setCities│ │-parkCb    │ │+paintComp-│ │+paintComp│
+│        │ ├────────┤ │  WithFilt│ │-cityCenter│ │ onent()   │ │ onent()  │
+│        │ │+setCit-│ │  er(...) │ │  Cb       │ │ draw bars │ │ draw pie │
+│        │ │ ies()  │ │  uses    │ │-costLabel │ │ Graphics2D│ │ fillArc()│
+│        │ │+getSel-│ │  Weather-│ │-hoursLabel│ │           │ │          │
+│        │ │ ected- │ │  CityIter│ │-descArea  │ │           │ │          │
+│        │ │ City() │ │  ator    │ ├───────────┤ │           │ │          │
+│        │ │+getList│ │          │ │+setCity() │ │           │ │          │
+└────────┘ └────────┘ └──────────┘ │-recalcul- │ └───────────┘ └──────────┘
+                                    │  ate()    │
+                                    │  builds   │
+                                    │ decorator │
+                                    │  chain    │
+                                    └───────────┘
+
+
+================================================================================
+  9. CROSS-PATTERN DEPENDENCY MAP
+================================================================================
+
+  ┌─────────────────┐    parse()    ┌─────────────────────┐
+  │ CityRepository  │──────────────>│ SimpleCityJsonParser│
+  │  <<Singleton>>  │               └─────────────────────┘
+  └────────┬────────┘
+           │ getCities()
+           ▼
+  ┌─────────────────────────┐   updateCities()    ┌──────────────┐
+  │  WeatherReportProvider  │────────────────────>│  City (list) │
+  │  <<Subject/Observable>> │                     └──────────────┘
+  └────────────┬────────────┘
+               │ notifyObservers()  every 3 seconds
+               ▼
+  ┌────────────────────────────────────────────┐
+  │  MainFrame  <<WeatherObserver>>            │
+  │  (SwingUtilities.invokeLater on each tick) │
+  └───┬──────────────┬────────────────────┬───┘
+      │              │                    │
+      ▼              ▼                    ▼
+ CitySorter    WeatherFilter-      BarChart / PieChart
+  <<Context>>   Panel               Panels repaint()
+      │         uses
+      │         WeatherCityIterator
+      ▼         <<Iterator>>
+ CitySortStrategy
+  <<Strategy>>
+
+
+  PlannerPanel  (on checkbox change)
+      │
+      └──> BaseCityActivity
+                │
+                └──> MuseumVisit ──> ParkVisit ──> ShoppingMallVisit ──> ...
+                     <<Decorator chain, cost and hours accumulate>>
+
+
+================================================================================
+  10. PACKAGE STRUCTURE
+================================================================================
+
+  com.travelplanner
+  │
+  ├── Main.java
+  │
+  ├── model/
+  │   ├── City.java
+  │   └── WeatherState.java            (enum)
+  │
+  ├── repository/
+  │   └── CityRepository.java          (Singleton)
+  │
+  ├── util/
+  │   └── SimpleCityJsonParser.java
+  │
+  ├── strategy/
+  │   ├── CitySortStrategy.java        (interface)
+  │   ├── CitySorter.java              (context)
+  │   ├── NameSortStrategy.java
+  │   ├── PopulationSortStrategy.java
+  │   └── AreaSortStrategy.java
+  │
+  ├── iterator/
+  │   ├── WeatherCityIterator.java     (interface)
+  │   ├── AbstractWeatherCityIterator.java  (abstract)
+  │   ├── SunnyCityIterator.java
+  │   ├── CloudyCityIterator.java
+  │   ├── RainyCityIterator.java
+  │   └── SnowyCityIterator.java
+  │
+  ├── observer/
+  │   ├── WeatherObserver.java         (interface)
+  │   ├── WeatherSubject.java          (interface)
+  │   └── WeatherReportProvider.java   (concrete subject)
+  │
+  ├── decorator/
+  │   ├── CityActivity.java            (interface / component)
+  │   ├── BaseCityActivity.java        (concrete component)
+  │   ├── CityActivityDecorator.java   (abstract decorator)
+  │   ├── MuseumVisit.java
+  │   ├── ShoppingMallVisit.java
+  │   ├── ParkVisit.java
+  │   └── CityCenterVisit.java
+  │
+  └── ui/
+      ├── MainFrame.java               (JFrame, WeatherObserver)
+      ├── ControlPanel.java            (JPanel)
+      ├── AllCitiesPanel.java          (JPanel)
+      ├── WeatherFilterPanel.java      (JPanel)
+      ├── PlannerPanel.java            (JPanel)
+      ├── TemperatureBarChartPanel.java(JPanel, custom Graphics2D)
+      ├── WeatherPieChartPanel.java    (JPanel, custom Graphics2D)
+      └── CityListCellRenderer.java
+
+================================================================================
