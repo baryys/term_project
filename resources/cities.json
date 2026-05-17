@@ -1,0 +1,107 @@
+[
+  {
+    "name": "Istanbul",
+    "population": 15840900,
+    "area": 5461.0,
+    "currentTemperature": 22.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Paris",
+    "population": 2161000,
+    "area": 105.4,
+    "currentTemperature": 15.5,
+    "currentWeatherState": "CLOUDY"
+  },
+  {
+    "name": "Rome",
+    "population": 2873000,
+    "area": 1285.0,
+    "currentTemperature": 19.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Barcelona",
+    "population": 1620000,
+    "area": 101.4,
+    "currentTemperature": 21.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Amsterdam",
+    "population": 921000,
+    "area": 219.4,
+    "currentTemperature": 12.0,
+    "currentWeatherState": "RAINY"
+  },
+  {
+    "name": "Prague",
+    "population": 1335000,
+    "area": 496.0,
+    "currentTemperature": 10.5,
+    "currentWeatherState": "CLOUDY"
+  },
+  {
+    "name": "Vienna",
+    "population": 1931000,
+    "area": 414.6,
+    "currentTemperature": 11.0,
+    "currentWeatherState": "CLOUDY"
+  },
+  {
+    "name": "Dubai",
+    "population": 3331000,
+    "area": 4114.0,
+    "currentTemperature": 38.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Ankara",
+    "population": 5782285,
+    "area": 24521.0,
+    "currentTemperature": 18.5,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Tokyo",
+    "population": 13960000,
+    "area": 2194.0,
+    "currentTemperature": 20.0,
+    "currentWeatherState": "CLOUDY"
+  },
+  {
+    "name": "New York",
+    "population": 8336000,
+    "area": 783.8,
+    "currentTemperature": 17.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Sydney",
+    "population": 5312000,
+    "area": 12368.0,
+    "currentTemperature": 24.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "Moscow",
+    "population": 12506000,
+    "area": 2561.5,
+    "currentTemperature": -3.0,
+    "currentWeatherState": "SNOWY"
+  },
+  {
+    "name": "Cairo",
+    "population": 10100000,
+    "area": 3085.1,
+    "currentTemperature": 32.0,
+    "currentWeatherState": "SUNNY"
+  },
+  {
+    "name": "London",
+    "population": 9002488,
+    "area": 1572.0,
+    "currentTemperature": 13.0,
+    "currentWeatherState": "RAINY"
+  }
+]
