@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="TravelPlanner">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/TravelPlanner.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
