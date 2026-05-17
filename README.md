@@ -106,7 +106,7 @@ Open **Command Prompt** or **PowerShell** in the project folder, then run:
 ```bat
 build.bat
 ```
-
+(If cmd gives a cmdlet error, double rigt click the build.bat file in file explorer)
 A `build.bat` script is provided in the project root. It does the same four steps as `build.sh`: prepare the output directory, compile all sources, copy resources, and package the JAR.
 
 ---
